@@ -17,16 +17,16 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json());
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 // POST /register, POST /login
-app.use('/', authRouter);
+app.use('/api/', authRouter);
 
-app.use('/songs', songsRouter);
-app.use('/playlist', playlistsRouter);
-app.use('/stream', streamRouter);
-app.use('/history', historyRouter);
-app.use('/favorites', favoritesRouter);
+app.use('/api/songs', songsRouter);
+app.use('/api/playlist', playlistsRouter);
+app.use('/api/stream', streamRouter);
+app.use('/api/history', historyRouter);
+app.use('/api/favorites', favoritesRouter);
 
 app.use('/intro',(req,res)=>{
   res.status(404).send("Hello World");
