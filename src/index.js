@@ -13,7 +13,13 @@ import { favoritesRouter } from './routes/favorites.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: [
+    "https://musicut.vercel.app"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 
