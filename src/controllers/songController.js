@@ -8,29 +8,37 @@ import { parseYoutubeVideoId, youtubeIdFromStoredFileUrl } from '../lib/youtube.
 
 const audioUploadDir = path.resolve(process.cwd(), process.env.LOCAL_AUDIO_DIR || './storage/audio');
 
+// export const audioUpload = multer({
+//   storage: multer.diskStorage({
+//     destination: (_req, _file, cb) => {
+//       fs.mkdirSync(audioUploadDir, { recursive: true });
+//       cb(null, audioUploadDir);
+//     },
+//     filename: (_req, file, cb) => {
+//       const ext = path.extname(file.originalname) || '.mp3';
+//       const base = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+//       cb(null, `${base}${ext}`);
+//     },
+//   }),
+//   limits: { fileSize: 80 * 1024 * 1024 },
+//   fileFilter: (_req, file, cb) => {
+//     const ok =
+//       /^audio\//i.test(file.mimetype) ||
+//       file.mimetype === 'application/octet-stream' ||
+//       /\.(mp3|m4a|aac|wav|ogg|flac|opus|webm)$/i.test(file.originalname);
+//     if (!ok) {
+//       cb(new Error('Chỉ chấp nhận file âm thanh (mp3, wav, ogg, …)'));
+//       return;
+//     }
+//     cb(null, true);
+//   },
+// });
+
+
 export const audioUpload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, cb) => {
-      fs.mkdirSync(audioUploadDir, { recursive: true });
-      cb(null, audioUploadDir);
-    },
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname) || '.mp3';
-      const base = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-      cb(null, `${base}${ext}`);
-    },
-  }),
-  limits: { fileSize: 80 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    const ok =
-      /^audio\//i.test(file.mimetype) ||
-      file.mimetype === 'application/octet-stream' ||
-      /\.(mp3|m4a|aac|wav|ogg|flac|opus|webm)$/i.test(file.originalname);
-    if (!ok) {
-      cb(new Error('Chỉ chấp nhận file âm thanh (mp3, wav, ogg, …)'));
-      return;
-    }
-    cb(null, true);
+  storage: multer.diskStorage({}),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
   },
 });
 
@@ -172,57 +180,77 @@ export async function createSongFromLink(req, res) {
   }
 }
 
-export async function createSongFromUpload(req, res) {
-  const file = req.file;
-  if (!file) {
-    return res.status(400).json({ error: 'Chưa có file nhạc' });
-  }
-  let cloudinaryUrl = '';
-  try {
-    const uploaded = await uploadAudioToCloudinary(file.path);
-    cloudinaryUrl = uploaded.secureUrl;
 
-    let duration = 0;
-    let title = (req.body.title || '').trim();
-    let artist = (req.body.artist || '').trim();
-    let album = (req.body.album || '').trim();
-    let genre = (req.body.genre || '').trim();
-    try {
-      const meta = await parseFile(file.path);
-      duration = Math.round(meta.format.duration || 0);
-      if (!title) title = (meta.common.title || '').trim();
-      if (!artist) {
-        const a = meta.common.artists?.[0] ?? meta.common.artist;
-        artist = (Array.isArray(a) ? a.join(', ') : String(a || '')).trim();
-      }
-      if (!album) album = (meta.common.album || '').trim();
-    } catch {
-      /* metadata optional */
-    }
-    if (!title) title = path.parse(file.originalname).name || 'Không tên';
-    if (!artist) artist = 'Không rõ';
+export async function createSongFromUpload(req, res) {
+  try {
+    const { title, artist, genre, fileUrl, duration } = req.body;
 
     const song = await Song.create({
       title,
       artist,
-      album: album || '',
-      genre: genre || '',
-      duration,
-      fileUrl: cloudinaryUrl,
-      coverUrl: '',
+      genre,
+      fileUrl,
+      duration: Number(duration) || 0,
     });
-    return res.status(201).json({ song: toPublicSong(song) });
+
+    res.status(201).json({ song });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Không lưu được bài hát' });
-  } finally {
-    try {
-      fs.unlinkSync(file.path);
-    } catch {
-      /* ignore */
-    }
+    res.status(500).json({ error: 'Không tạo được bài hát' });
   }
 }
+
+// export async function createSongFromUpload(req, res) {
+//   const file = req.file;
+//   if (!file) {
+//     return res.status(400).json({ error: 'Chưa có file nhạc' });
+//   }
+//   let cloudinaryUrl = '';
+//   try {
+//     const uploaded = await uploadAudioToCloudinary(file.path);
+//     cloudinaryUrl = uploaded.secureUrl;
+
+//     let duration = 0;
+//     let title = (req.body.title || '').trim();
+//     let artist = (req.body.artist || '').trim();
+//     let album = (req.body.album || '').trim();
+//     let genre = (req.body.genre || '').trim();
+//     try {
+//       const meta = await parseFile(file.path);
+//       duration = Math.round(meta.format.duration || 0);
+//       if (!title) title = (meta.common.title || '').trim();
+//       if (!artist) {
+//         const a = meta.common.artists?.[0] ?? meta.common.artist;
+//         artist = (Array.isArray(a) ? a.join(', ') : String(a || '')).trim();
+//       }
+//       if (!album) album = (meta.common.album || '').trim();
+//     } catch {
+//       /* metadata optional */
+//     }
+//     if (!title) title = path.parse(file.originalname).name || 'Không tên';
+//     if (!artist) artist = 'Không rõ';
+
+//     const song = await Song.create({
+//       title,
+//       artist,
+//       album: album || '',
+//       genre: genre || '',
+//       duration,
+//       fileUrl: cloudinaryUrl,
+//       coverUrl: '',
+//     });
+//     return res.status(201).json({ song: toPublicSong(song) });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ error: 'Không lưu được bài hát' });
+//   } finally {
+//     try {
+//       fs.unlinkSync(file.path);
+//     } catch {
+//       /* ignore */
+//     }
+//   }
+// }
 
 export async function updateSong(req, res) {
   try {

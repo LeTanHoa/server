@@ -13,16 +13,28 @@ import { adminMiddleware, authMiddleware } from '../middleware/auth.js';
 export const songsRouter = Router();
 
 songsRouter.post('/from-link', authMiddleware, adminMiddleware, createSongFromLink);
+// songsRouter.post(
+//   '/upload',
+//   authMiddleware,
+//   adminMiddleware,
+//   (req, res, next) => {
+//     audioUpload.single('audio')(req, res, (err) => {
+//       if (err instanceof multer.MulterError) {
+//         return res.status(413).json({ error: 'File quá lớn (tối đa 50MB)' });
+//       }
+//       if (err) {
+//         return res.status(400).json({ error: err.message });
+//       }
+//       next();
+//     });
+//   },
+//   createSongFromUpload
+// );
+
 songsRouter.post(
   '/upload',
   authMiddleware,
   adminMiddleware,
-  (req, res, next) => {
-    audioUpload.single('audio')(req, res, (err) => {
-      if (err) return res.status(400).json({ error: err.message || 'Upload thất bại' });
-      next();
-    });
-  },
   createSongFromUpload
 );
 
