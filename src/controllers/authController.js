@@ -2,6 +2,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 
+
+
 function signToken(user) {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET is not configured');
@@ -12,6 +14,9 @@ function signToken(user) {
     { expiresIn }
   );
 }
+
+
+
 
 export async function register(req, res) {
   try {
@@ -76,3 +81,17 @@ export async function login(req, res) {
     return res.status(500).json({ error: 'Login failed' });
   }
 }
+
+
+// export async function usersList(req, res) {
+//   try {
+//     const users = await User.find();
+
+//     console.log(users);
+
+//     return res.json({ users });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ error: 'Failed to load users' });
+//   }
+// }

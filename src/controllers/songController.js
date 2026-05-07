@@ -3,6 +3,7 @@ import path from 'path';
 import multer from 'multer';
 import { parseFile } from 'music-metadata';
 import { Song } from '../models/Song.js';
+import { uploadAudioToCloudinary } from '../services/cloudinary.js';
 import { parseYoutubeVideoId, youtubeIdFromStoredFileUrl } from '../lib/youtube.js';
 
 const audioUploadDir = path.resolve(process.cwd(), process.env.LOCAL_AUDIO_DIR || './storage/audio');
@@ -176,7 +177,11 @@ export async function createSongFromUpload(req, res) {
   if (!file) {
     return res.status(400).json({ error: 'Chưa có file nhạc' });
   }
+  let cloudinaryUrl = '';
   try {
+    const uploaded = await uploadAudioToCloudinary(file.path);
+    cloudinaryUrl = uploaded.secureUrl;
+
     let duration = 0;
     let title = (req.body.title || '').trim();
     let artist = (req.body.artist || '').trim();
@@ -203,18 +208,19 @@ export async function createSongFromUpload(req, res) {
       album: album || '',
       genre: genre || '',
       duration,
-      fileUrl: path.basename(file.path),
+      fileUrl: cloudinaryUrl,
       coverUrl: '',
     });
     return res.status(201).json({ song: toPublicSong(song) });
   } catch (err) {
     console.error(err);
+    return res.status(500).json({ error: 'Không lưu được bài hát' });
+  } finally {
     try {
       fs.unlinkSync(file.path);
     } catch {
       /* ignore */
     }
-    return res.status(500).json({ error: 'Không lưu được bài hát' });
   }
 }
 
