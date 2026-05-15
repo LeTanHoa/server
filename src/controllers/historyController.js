@@ -2,6 +2,48 @@ import { History } from '../models/History.js';
 import { Song } from '../models/Song.js';
 import { publicSongFromDoc } from '../lib/publicSong.js';
 
+/** Public top chart: most played songs across all users */
+export async function top(req, res) {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 50);
+    const rows = await History.aggregate([
+      { $group: { _id: '$songId', plays: { $sum: 1 } } },
+      { $sort: { plays: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'songs',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'song',
+        },
+      },
+      { $unwind: '$song' },
+      {
+        $project: {
+          song: 1,
+          plays: 1,
+        },
+      },
+    ]);
+
+    const songs = rows.map((row) => ({
+      ...publicSongFromDoc(row.song),
+      plays: row.plays,
+    }));
+
+    if (!songs.length) {
+      const fallback = await Song.find().sort({ createdAt: -1 }).limit(limit).lean();
+      return res.json({ songs: fallback.map((song) => publicSongFromDoc(song)).filter(Boolean) });
+    }
+
+    return res.json({ songs });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to load top songs' });
+  }
+}
+
 /** Recently played: last N distinct songs for the user */
 export async function recent(req, res) {
   try {
