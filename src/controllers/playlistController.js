@@ -100,6 +100,24 @@ export async function getPlaylist(req, res) {
   }
 }
 
+export async function deletePlaylist(req, res) {
+  try {
+    const playlist = await Playlist.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.sub,
+    }).lean();
+
+    if (!playlist) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to delete playlist' });
+  }
+}
+
 export async function listMyPlaylists(req, res) {
   try {
     const playlists = await Playlist.find({ userId: req.user.sub })

@@ -9,6 +9,7 @@ import { playlistsRouter } from './routes/playlists.js';
 import { streamRouter } from './routes/stream.js';
 import { historyRouter } from './routes/history.js';
 import { favoritesRouter } from './routes/favorites.js';
+import { adminRouter } from './routes/admin.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -28,7 +29,6 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
-
 // POST /register, POST /login
 app.use('/api', authRouter);
 
@@ -37,6 +37,7 @@ app.use('/api/playlist', playlistsRouter);
 app.use('/api/stream', streamRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/favorites', favoritesRouter);
+app.use('/api/admin', adminRouter);
 
 app.use('/intro', (req, res) => {
   res.status(404).send("Hello World");
