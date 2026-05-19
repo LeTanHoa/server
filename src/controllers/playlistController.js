@@ -19,25 +19,46 @@ function toPublicPlaylist(p, songsPopulated = false) {
   };
   return base;
 }
-
 export async function createPlaylist(req, res) {
   try {
     const { name } = req.body;
+
     if (!name || !String(name).trim()) {
-      return res.status(400).json({ error: 'name is required' });
+      return res.status(400).json({ error: 'Name is required' });
     }
+
+    const trimmedName = String(name).trim();
+    const existing = await Playlist.findOne({
+      userId: req.user.sub,
+      name: trimmedName,
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error: 'Tên playlist đã tồn tại'
+      });
+    }
+
     const playlist = await Playlist.create({
       userId: req.user.sub,
-      name: String(name).trim(),
+      name: trimmedName,
       songs: [],
     });
-    return res.status(201).json({ playlist: toPublicPlaylist(playlist.toObject()) });
+
+    return res.status(201).json({
+      playlist: toPublicPlaylist(playlist.toObject())
+    });
+
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Failed to create playlist' });
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'Tên playlist đã tồn tại' });
+    }
+    return res.status(500).json({
+      error: 'Failed to create playlist'
+    });
   }
 }
-
 export async function addSongToPlaylist(req, res) {
   try {
     const { playlist_id: playlistIdBody, playlistId, song_id: songIdBody, songId: songIdField } =
