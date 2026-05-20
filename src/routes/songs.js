@@ -7,6 +7,7 @@ import {
   audioUpload,
   updateSong,
   deleteSong,
+  getSongsByArtist,
 } from '../controllers/songController.js';
 import { adminMiddleware, authMiddleware } from '../middleware/auth.js';
 
